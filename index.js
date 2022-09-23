@@ -1,10 +1,9 @@
+import "dotenv/config";
 import { readdirSync, readFileSync, writeFileSync } from 'fs';
+import { inputFolderPath, outputFolderPath, dateFormat, timeFormat } from './config.js';
 import ExcelJS from 'exceljs';
 import moment from 'moment';
 import path from 'path';
-
-const inputFolderPath = './playlists'
-const outputFolderPath = './output'
 
 function getPlaylists() {
     const folder = readdirSync(inputFolderPath);
@@ -26,19 +25,12 @@ function formatTrack(track) {
     return { id, name }
 }
 
-function extractDateAndTime(added_at) {
-    const date = moment(added_at).format("DD/MM/YYYY")
-    const time = moment(added_at).format("HH:mm")
-    return { date, time }
-}
-
 function formatData(playlist, item) {
     const { added_at } = item
     const { id, name } = formatTrack(item.track)
-    const { date, time } = extractDateAndTime(added_at)
 
     return [id, {
-        name, date, time,
+        name, added_at,
         playlist: playlist.name
     }]
 }
@@ -65,6 +57,12 @@ function tracklistToArray(tracklist) {
     })
 }
 
+function extractDateAndTime(added_at) {
+    const date = moment(added_at).format(dateFormat)
+    const time = moment(added_at).format(timeFormat)
+    return [ date, time ]
+}
+
 function writeIds(tracklist) {
     const content = Array.from(tracklist.keys()).join('\n')
     writeFileSync(path.join(outputFolderPath, 'result.txt'), content)
@@ -76,11 +74,11 @@ function writeSheet(tracklist) {
 
     sheet.addRow(['ID', 'Playlist', 'Date', 'Time', 'Track'])
     sheet.addRows(tracklistToArray(tracklist).map(d => 
-        [d.id, d.playlist, d.date, d.time, d.name]
+        [d.id, d.playlist, ...extractDateAndTime(d.added_at), d.name]
     ))
 
     sheet.getColumn('A').hidden = true;
-    workbook.xlsx.writeFile('./output/result.xlsx')
+    workbook.xlsx.writeFile(path.join(outputFolderPath, 'result.xlsx'))
         .then(() => console.log("File written successfully."))
         .catch(() => console.error("File written successfully."))
 }
