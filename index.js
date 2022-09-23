@@ -1,4 +1,5 @@
 import { readdirSync, readFileSync, writeFileSync } from 'fs';
+import ExcelJS from 'exceljs';
 import moment from 'moment';
 import path from 'path';
 
@@ -57,14 +58,36 @@ function getTrackList() {
     return result;
 }
 
+function tracklistToArray(tracklist) {
+    const keys = Array.from(tracklist.keys());
+    return keys.map(key => {
+        return { id: key, ...tracklist.get(key) }
+    })
+}
+
 function writeIds(tracklist) {
     const content = Array.from(tracklist.keys()).join('\n')
     writeFileSync(path.join(outputFolderPath, 'result.txt'), content)
 }
 
+function writeSheet(tracklist) {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Result');
+
+    sheet.addRow(['ID', 'Playlist', 'Date', 'Time', 'Track'])
+    sheet.addRows(tracklistToArray(tracklist).map(d => 
+        [d.id, d.playlist, d.date, d.time, d.name]
+    ))
+
+    sheet.getColumn('A').hidden = true;
+    workbook.xlsx.writeFile('./output/result.xlsx')
+        .then(() => console.log("File written successfully."))
+        .catch(() => console.error("File written successfully."))
+}
+
 function main() {
     const tracklist = getTrackList()
-    writeIds(tracklist)
+    writeSheet(tracklist)
 }
 
 main();
