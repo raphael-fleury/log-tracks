@@ -39,6 +39,7 @@ function getTrackList() {
     const result = new Map();
 
     for (const playlist of getPlaylists()) {
+        playlist.tracks.items.sort((a, b) => moment(a.added_at) - moment(b.added_at))
         for (const item of playlist.tracks.items) {
             const [id, data] = formatData(playlist, item)
             if (!result.has(id)) {
